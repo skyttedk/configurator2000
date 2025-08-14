@@ -6,6 +6,10 @@ const PORT = process.env.PORT || 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.get('/demo-hello', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'demo-hello.html'));
+});
+
 app.get('/api/hello', (req, res) => {
   res.json({ message: 'Hello World' });
 });
