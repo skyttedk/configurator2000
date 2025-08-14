@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JSON Viewer Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/json-viewer-js@1.0.8/lib/json-viewer.min.js"></script>
+</head>
+<body>
+  <h1>JSON Viewer Demo</h1>
+  <div id="jsonViewer"></div>
+  <script>
+    const demoJson = {
+      title: "Configurator Demo",
+      version: "1.0.0",
+      features: ["express", "json viewer", "demo"],
+      nested: {
+        enabled: true,
+        count: 3
+      }
+    };
+
+    const container = document.getElementById('jsonViewer');
+    new JsonViewer({ container, data: JSON.stringify(demoJson), theme: 'light', expand: true });
+  </script>
+</body>
+</html>

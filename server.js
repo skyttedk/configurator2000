@@ -10,6 +10,10 @@ app.get('/demo-hello', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'demo-hello.html'));
 });
 
+app.get('/demo-json', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'demo-json.html'));
+});
+
 app.get('/api/hello', (req, res) => {
   res.json({ message: 'Hello World' });
 });
