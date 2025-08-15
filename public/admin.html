@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Database Management - Configurator2000</title>
+  
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      background: #f8f9fa; 
+    }
+    .container-fluid { 
+      padding: 20px; 
+    }
+    .records-table {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      background: white;
+    }
+    .form-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-top: 20px;
+    }
+    .schema-textarea {
+      height: 200px;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .btn-action {
+      margin: 0 2px;
+    }
+    .alert {
+      margin: 10px 0;
+    }
+    .table-responsive {
+      border-radius: 8px;
+    }
+    .record-row:hover {
+      background-color: #f8f9fa;
+      cursor: pointer;
+    }
+    .selected-row {
+      background-color: #e3f2fd !important;
+    }
+    
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 9999;
+    }
+    .toast {
+      background: #333;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      display: flex;
+      align-items: center;
+      min-width: 300px;
+      opacity: 0;
+      transform: translateX(100%);
+      transition: all 0.3s ease;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .toast.success { background: #28a745; }
+    .toast.info { background: #17a2b8; }
+    .toast.warning { background: #ffc107; color: #000; }
+    .toast.danger { background: #dc3545; }
+    .toast .icon { margin-right: 10px; font-size: 18px; }
+  </style>
+</head>
+<body>
+  <div class="container-fluid">
+    <div class="row">
+      <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h1>Database Management</h1>
+          <div>
+            <a href="designer.html" class="btn btn-outline-primary">← Back to Designer</a>
+            <button id="refreshBtn" class="btn btn-secondary">🔄 Refresh</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Records List -->
+    <div class="row">
+      <div class="col-12">
+        <div class="records-table">
+          <div class="d-flex justify-content-between align-items-center p-3 border-bottom">
+            <h4 class="mb-0">📋 Stored Configurations</h4>
+            <span id="recordCount" class="badge bg-primary">0 records</span>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0" id="recordsTable">
+              <thead class="table-light">
+                <tr>
+                  <th width="50">ID</th>
+                  <th width="200">Name</th>
+                  <th>Semantic Schema</th>
+                  <th width="150">Created</th>
+                  <th width="150">Updated</th>
+                  <th width="140">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="recordsBody">
+                <tr>
+                  <td colspan="6" class="text-center text-muted p-4">Loading...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form Section -->
+    <div class="row">
+      <div class="col-12">
+        <div class="form-section">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 id="formTitle">➕ Add New Configuration</h4>
+            <button id="clearFormBtn" class="btn btn-outline-secondary btn-sm">Clear Form</button>
+          </div>
+          
+          <div id="alertContainer"></div>
+          
+          <form id="configForm">
+            <div class="row">
+              <div class="col-md-12">
+                <div class="mb-3">
+                  <label class="form-label" for="configName">Name *</label>
+                  <input type="text" class="form-control" id="configName" required>
+                  <div class="form-text">Unique identifier for this configuration</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="row">
+              <div class="col-md-12">
+                <div class="mb-3">
+                  <label class="form-label" for="semanticSchema">Semantic Schema *</label>
+                  <textarea class="form-control schema-textarea" id="semanticSchema" required 
+                    placeholder="Describe what this form should collect and validate..."></textarea>
+                  <div class="form-text">Natural language description of the form structure</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="d-flex gap-2">
+              <button type="submit" class="btn btn-success" id="saveBtn">💾 Save Configuration</button>
+              <button type="button" class="btn btn-warning" id="updateBtn" style="display: none;">📝 Update Configuration</button>
+              <button type="button" class="btn btn-danger" id="deleteBtn" style="display: none;">🗑️ Delete Configuration</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <script>
+    // Toast notification system
+    function showToast(message, type = 'info', duration = 4000) {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      
+      const icons = {
+        success: '✅',
+        info: '🔄',
+        warning: '⚠️',
+        danger: '❌'
+      };
+      
+      toast.innerHTML = `
+        <span class="icon">${icons[type] || '📢'}</span>
+        <span>${message}</span>
+      `;
+      
+      container.appendChild(toast);
+      
+      // Show toast
+      setTimeout(() => toast.classList.add('show'), 100);
+      
+      // Hide and remove toast
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => {
+          if (toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+          }
+        }, 300);
+      }, duration);
+    }
+
+    class DatabaseManager {
+      constructor() {
+        this.currentRecord = null;
+        this.records = [];
+        this.initEventListeners();
+        this.loadRecords();
+      }
+
+      initEventListeners() {
+        // Form submission
+        document.getElementById('configForm').addEventListener('submit', (e) => {
+          e.preventDefault();
+          this.saveRecord();
+        });
+
+        // Button events
+        document.getElementById('updateBtn').addEventListener('click', () => this.updateRecord());
+        document.getElementById('deleteBtn').addEventListener('click', () => this.deleteRecord());
+        document.getElementById('clearFormBtn').addEventListener('click', () => this.clearForm());
+        document.getElementById('refreshBtn').addEventListener('click', () => this.loadRecords());
+
+        // Table row clicks
+        document.getElementById('recordsBody').addEventListener('click', (e) => {
+          const row = e.target.closest('tr');
+          if (row && row.dataset.id) {
+            this.selectRecord(parseInt(row.dataset.id));
+          }
+        });
+      }
+
+      async loadRecords() {
+        try {
+          const response = await fetch('/api/configurations');
+          if (!response.ok) throw new Error('Failed to load records');
+          
+          this.records = await response.json();
+          this.renderRecords();
+          this.showAlert('Records loaded successfully', 'success');
+        } catch (error) {
+          this.showAlert(`Error loading records: ${error.message}`, 'danger');
+        }
+      }
+
+      renderRecords() {
+        const tbody = document.getElementById('recordsBody');
+        const countSpan = document.getElementById('recordCount');
+        
+        countSpan.textContent = `${this.records.length} record${this.records.length !== 1 ? 's' : ''}`;
+        
+        if (this.records.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted p-4">No configurations found</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = this.records.map(record => `
+          <tr class="record-row" data-id="${record.id}">
+            <td>${record.id}</td>
+            <td><strong>${this.escapeHtml(record.name)}</strong></td>
+            <td>${this.truncateText(this.escapeHtml(record.semantic_schema || ''), 50)}</td>
+            <td>${this.formatDate(record.created_at)}</td>
+            <td>${this.formatDate(record.updated_at)}</td>
+            <td>
+              <button class="btn btn-sm btn-outline-success btn-action" onclick="dbManager.designRecord(${record.id})" title="Open in Designer">🎨</button>
+              <button class="btn btn-sm btn-outline-info btn-action" onclick="dbManager.manageRules(${record.id})" title="Manage Rules">📋</button>
+              <button class="btn btn-sm btn-outline-primary btn-action" onclick="dbManager.selectRecord(${record.id})" title="Edit">📝</button>
+              <button class="btn btn-sm btn-outline-danger btn-action" onclick="dbManager.confirmDelete(${record.id})" title="Delete">🗑️</button>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      designRecord(id) {
+        window.location.href = `designer.html?id=${id}`;
+      }
+
+      manageRules(id) {
+        const record = this.records.find(r => r.id === id);
+        const recordName = record ? record.name : `ID ${id}`;
+        alert(`Rules management for "${recordName}" will be implemented soon!`);
+        // TODO: Navigate to rules management page
+        // window.location.href = `rules.html?configId=${id}`;
+      }
+
+      async selectRecord(id) {
+        try {
+          const response = await fetch(`/api/configurations/${id}`);
+          if (!response.ok) throw new Error('Failed to load record');
+          
+          const record = await response.json();
+          this.currentRecord = record;
+          this.populateForm(record);
+          
+          // Highlight selected row
+          document.querySelectorAll('.record-row').forEach(row => row.classList.remove('selected-row'));
+          document.querySelector(`tr[data-id="${id}"]`)?.classList.add('selected-row');
+          
+          this.showAlert(`Configuration "${record.name}" loaded for editing`, 'info');
+        } catch (error) {
+          this.showAlert(`Error loading record: ${error.message}`, 'danger');
+        }
+      }
+
+      populateForm(record) {
+        document.getElementById('configName').value = record.name || '';
+        document.getElementById('semanticSchema').value = record.semantic_schema || '';
+        
+        // Show update/delete buttons, hide save button
+        document.getElementById('saveBtn').style.display = 'none';
+        document.getElementById('updateBtn').style.display = 'inline-block';
+        document.getElementById('deleteBtn').style.display = 'inline-block';
+        document.getElementById('formTitle').textContent = `📝 Edit Configuration: ${record.name}`;
+      }
+
+      async saveRecord() {
+        try {
+          const formData = this.getFormData();
+          if (!this.validateForm(formData)) return;
+
+          const response = await fetch('/api/configurations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to save record');
+          }
+
+          const result = await response.json();
+          showToast(`Configuration "${formData.name}" saved successfully`, 'success');
+          this.clearForm();
+          this.loadRecords();
+        } catch (error) {
+          showToast(`Error saving record: ${error.message}`, 'danger');
+        }
+      }
+
+      async updateRecord() {
+        if (!this.currentRecord) {
+          this.showAlert('No record selected for update', 'warning');
+          return;
+        }
+
+        try {
+          const formData = this.getFormData();
+          if (!this.validateForm(formData)) return;
+
+          const response = await fetch(`/api/configurations/${this.currentRecord.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to update record');
+          }
+
+          showToast(`Configuration "${formData.name}" updated successfully`, 'success');
+          this.clearForm();
+          this.loadRecords();
+        } catch (error) {
+          showToast(`Error updating record: ${error.message}`, 'danger');
+        }
+      }
+
+      confirmDelete(id) {
+        const record = this.records.find(r => r.id === id);
+        if (!record) return;
+        
+        if (confirm(`Are you sure you want to delete configuration "${record.name}"?`)) {
+          this.deleteRecordById(id);
+        }
+      }
+
+      async deleteRecord() {
+        if (!this.currentRecord) {
+          this.showAlert('No record selected for deletion', 'warning');
+          return;
+        }
+
+        if (confirm(`Are you sure you want to delete configuration "${this.currentRecord.name}"?`)) {
+          this.deleteRecordById(this.currentRecord.id);
+        }
+      }
+
+      async deleteRecordById(id) {
+        try {
+          const response = await fetch(`/api/configurations/${id}`, {
+            method: 'DELETE'
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to delete record');
+          }
+
+          showToast('Configuration deleted successfully', 'success');
+          this.clearForm();
+          this.loadRecords();
+        } catch (error) {
+          showToast(`Error deleting record: ${error.message}`, 'danger');
+        }
+      }
+
+      getFormData() {
+        return {
+          name: document.getElementById('configName').value.trim(),
+          semanticSchema: document.getElementById('semanticSchema').value.trim()
+        };
+      }
+
+      validateForm(formData) {
+        if (!formData.name) {
+          this.showAlert('Name is required', 'danger');
+          return false;
+        }
+
+        if (!formData.semanticSchema) {
+          this.showAlert('Semantic Schema is required', 'danger');
+          return false;
+        }
+
+        return true;
+      }
+
+      clearForm() {
+        document.getElementById('configForm').reset();
+        this.currentRecord = null;
+        
+        // Show save button, hide update/delete buttons
+        document.getElementById('saveBtn').style.display = 'inline-block';
+        document.getElementById('updateBtn').style.display = 'none';
+        document.getElementById('deleteBtn').style.display = 'none';
+        document.getElementById('formTitle').textContent = '➕ Add New Configuration';
+        
+        // Clear selected row
+        document.querySelectorAll('.record-row').forEach(row => row.classList.remove('selected-row'));
+      }
+
+      showAlert(message, type) {
+        const container = document.getElementById('alertContainer');
+        const alert = document.createElement('div');
+        alert.className = `alert alert-${type} alert-dismissible fade show`;
+        alert.innerHTML = `
+          ${message}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        container.innerHTML = '';
+        container.appendChild(alert);
+        
+        // Auto-dismiss after 5 seconds
+        setTimeout(() => {
+          if (alert.parentNode) {
+            alert.remove();
+          }
+        }, 5000);
+      }
+
+      escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+      }
+
+      formatDate(dateString) {
+        return new Date(dateString).toLocaleString();
+      }
+
+      truncateText(text, maxLength) {
+        if (!text) return '';
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+      }
+    }
+
+    // Initialize the database manager
+    const dbManager = new DatabaseManager();
+  </script>
+</body>
+</html>

@@ -1,7 +1,15 @@
 {
   "permissions": {
     "allow": [
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(npm install)",
+      "Bash(node server.js)",
+      "Bash(set PORT=3001)",
+      "Bash(del configurator.db)",
+      "Bash(mv:*)",
+      "Bash(mkdir:*)",
+      "Bash(git rm:*)",
+      "Bash(node:*)"
     ],
     "deny": [],
     "ask": [],

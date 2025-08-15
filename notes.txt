@@ -1,0 +1,42 @@
+# Configurator 2000 - Development Notes
+
+## Architecture Overview
+The system follows a clean separation between user-generated and AI-generated content:
+
+### Data Flow
+1. User provides semantic schema and rules
+2. AI generates JSON schema, UI schema, and JavaScript functions
+3. System tracks changes and provides delta information for incremental updates
+
+### Core Entities
+
+#### Configuration
+- Name (user-generated)
+- Semantic Schema (user-generated)  
+- Rules (user-generated)
+- Data Schema (AI-generated)
+- UI Schema (AI-generated)
+- JS Function Implementation (AI-generated)
+
+#### Rules Engine
+- Simple validation rules → JSON Schema constraints
+- Complex conditional rules → JavaScript functions
+- Rule ordering and precedence
+
+### Technology Stack
+- Backend: Node.js, Express, SQLite
+- Frontend: React JSON Schema Form (https://rjsf-team.github.io/react-jsonschema-form/)
+- AI: Anthropic Claude API
+
+## Development Workflow
+1. Create semantic schema
+2. Define validation rules
+3. Generate schemas via AI
+4. Test and iterate
+5. Save final configuration
+
+## Key Features
+- Incremental schema updates (delta-based)
+- Activity logging
+- Rule-based validation
+- Dynamic form generation
